@@ -1,12 +1,13 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ProductController;
-use App\Http\Controllers\UserController; 
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\TransaksiController;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth; 
 
 // Route untuk guest (belum login)
 Route::middleware(['guest'])->group(function () {
@@ -21,25 +22,33 @@ Route::get('/home', function () {
 
 // Route untuk user yang sudah login
 Route::middleware(['auth'])->group(function () {
+
+    // ===== DASHBOARD & ROLE =====
     Route::get('/admin', [AdminController::class, 'index']);
     Route::get('/admin/admin', [AdminController::class, 'admin'])->middleware('userAkses:admin');
     Route::get('/admin/kasir', [AdminController::class, 'kasir'])->middleware('userAkses:kasir');
+
+    // ===== PRODUK (CRUD) =====
     Route::resource('/produk', ProductController::class);
-    Route::get('/transaksi', [AdminController::class, 'laporan'])->middleware('auth');
+    Route::post('/produk/{id}/tambah-stok', [ProductController::class, 'tambahStok'])->name('produk.tambahStok');
+
+    // ===== USER MANAGEMENT =====
     Route::resource('/users', UserController::class)->middleware('userAkses:admin');
-    Route::get('/kasir', [TransaksiController::class, 'index'])->middleware('userAkses:kasir');
-    Route::post('/kasir/simpan', [TransaksiController::class, 'store'])->name('kasir.store');
+
+    // ===== TRANSAKSI =====
+    Route::get('/transaksi/create', [TransaksiController::class, 'create'])->name('transaksi.create')->middleware('userAkses:kasir');
+    Route::post('/transaksi/store', [TransaksiController::class, 'store'])->name('transaksi.store')->middleware('userAkses:kasir');
+    Route::get('/transaksi/riwayat', [TransaksiController::class, 'riwayat'])->name('transaksi.riwayat')->middleware('userAkses:kasir');
+
+    // (Opsional) halaman kasir awal
+    Route::get('/kasir', [TransaksiController::class, 'create'])->name('kasir.index')->middleware('userAkses:kasir');
+
+    // ===== ADMIN LAPORAN (JIKA ADA) =====
+    Route::get('/transaksi', [AdminController::class, 'laporan'])->middleware('userAkses:admin');
+
+    // ===== LOGOUT =====
     Route::get('/logout', [AdminController::class, 'logout']);
 });
 
-Route::middleware(['auth', 'userAkses:kasir'])->group(function () {
-    Route::post('/transaksi', [TransaksiController::class, 'store'])->name('transaksi.store');
-    Route::get('/transaksi/create', [App\Http\Controllers\TransaksiController::class, 'create']);
-    Route::post('/transaksi/store', [App\Http\Controllers\TransaksiController::class, 'store'])->name('transaksi.store');
-    Route::get('/transaksi/riwayat', [TransaksiController::class, 'riwayat'])->name('transaksi.riwayat');
-    Route::post('/produk/{id}/tambah-stok', [ProductController::class, 'tambahStok'])->name('produk.tambahStok');
-});
-
-
-// Jika tetap ingin pakai Auth::routes (untuk route default register/login/password reset)
+// Auth bawaan Laravel
 Auth::routes();

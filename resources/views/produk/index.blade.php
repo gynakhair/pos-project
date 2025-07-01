@@ -8,7 +8,6 @@
         <a href="/admin" class="btn btn-secondary">← Kembali ke Dashboard</a>
     </div>
 
-    {{-- ✅ Flash message sukses --}}
     @if (session('success'))
         <div class="alert alert-success">
             {{ session('success') }}
